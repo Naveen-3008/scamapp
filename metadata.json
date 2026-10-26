@@ -1,0 +1,6 @@
+{
+  "name": "ElderShield",
+  "description": "Realistic virtual Android smartphone simulator with automatic SMS, WhatsApp, and phone call scam detection and multilingual voice warnings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
