@@ -484,4 +484,204 @@ export const SAMPLE_PHONE_SCENARIOS: SamplePhoneScenario[] = [
       'আপনার ছেলে সৌম্য সন্ধ্যার খোঁজখবর নিতে এবং রাতের ওষুধ খাওয়ার কথা মনে করিয়ে দিতে কল করছে।',
     scenarioLanguage: 'bn',
   },
+
+  // ==================== ADDITIONAL NORMAL MESSAGES & CALLS ACROSS ALL 7 LANGUAGES ====================
+  {
+    id: 'scn-en-15-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'Priya (Daughter)',
+    phoneNumber: '+91 90000 10202',
+    content:
+      'Hi Dad! Just reminding you that Arjun and I are coming over for lunch this Sunday. I am bringing homemade carrot halwa for you!',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-en-16-safe-sms',
+    channel: 'sms',
+    senderName: 'City Public Library',
+    phoneNumber: 'VM-CTYLIB',
+    content:
+      'City Library: The gardening book you reserved ("Balcony Herbs & Flowers") is ready at the front desk for pickup this week.',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-en-17-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'Morning Walk Group',
+    phoneNumber: '+91 90000 10415',
+    content:
+      'Good morning! Tomorrow 6:30 AM walk will meet near the botanical park east gate, followed by filter coffee at the corner cafe.',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-en-18-safe-sms',
+    channel: 'sms',
+    senderName: 'CarePlus Pharmacy',
+    phoneNumber: 'VM-CAREPH',
+    content:
+      'CarePlus Pharmacy: Your monthly blood pressure and vitamin tablets refill is packed and ready. Pick up anytime before 8:00 PM.',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-en-19-safe-call',
+    channel: 'call',
+    senderName: 'Priya (Daughter)',
+    phoneNumber: '+91 90000 10202',
+    content:
+      'Your daughter Priya is calling to check how your afternoon rest went and ask what fresh fruit to bring for dinner.',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-en-20-safe-call',
+    channel: 'call',
+    senderName: 'Rohan (Grandson)',
+    phoneNumber: '+91 90000 10102',
+    content:
+      'Your grandson Rohan is calling from his college hostel to share his semester results and wish you a pleasant evening.',
+    scenarioLanguage: 'en',
+  },
+  {
+    id: 'scn-ta-09-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'திவ்யா (மகள்)',
+    phoneNumber: '+91 90000 20102',
+    content:
+      'அப்பா, ஞாயிற்றுக்கிழமை மதியம் குழந்தைகளுடன் உங்கள் வீட்டுக்கு வருகிறேன். உங்களுக்குப் பிடித்த மல்லிகைப் பூவும் இனிப்பும் வாங்கி வருகிறேன்.',
+    scenarioLanguage: 'ta',
+  },
+  {
+    id: 'scn-ta-10-safe-sms',
+    channel: 'sms',
+    senderName: 'நலம் மருந்தகம்',
+    phoneNumber: 'VM-NALAMM',
+    content:
+      'நலம் மருந்தகம்: நீங்கள் கேட்ட மாதாந்திர சர்க்கரை மற்றும் வைட்டமின் மாத்திரைகள் தயாராக உள்ளன. மாலை 7 மணிக்குள் பெற்றுக்கொள்ளலாம்.',
+    scenarioLanguage: 'ta',
+  },
+  {
+    id: 'scn-ta-11-safe-call',
+    channel: 'call',
+    senderName: 'அருண் கண் மருத்துவமனை',
+    phoneNumber: '+91 90000 20303',
+    content:
+      'அருண் கண் மருத்துவமனை வரவேற்பாளர் நாளை காலை 10:30 மணி வழக்கமான கண் பரிசோதனை நேரத்தை நினைவூட்ட அழைக்கிறார்.',
+    scenarioLanguage: 'ta',
+  },
+  {
+    id: 'scn-hi-07-safe-sms',
+    channel: 'sms',
+    senderName: 'आरोग्य क्लिनिक',
+    phoneNumber: 'VM-AROGYA',
+    content:
+      'नमस्ते, डॉ. राजेश वर्मा के साथ आपकी नियमित स्वास्थ्य जाँच कल सुबह 11:00 बजे निर्धारित है। कृपया पुरानी रिपोर्ट साथ लाएँ।',
+    scenarioLanguage: 'hi',
+  },
+  {
+    id: 'scn-hi-08-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'आर्यन (पोता)',
+    phoneNumber: '+91 90000 30105',
+    content:
+      'दादाजी प्रणाम! आज मेरे स्कूल के क्रिकेट मैच में हमारी टीम जीत गई! रविवार को घर आकर आपको पूरी कहानी सुनाऊँगा।',
+    scenarioLanguage: 'hi',
+  },
+  {
+    id: 'scn-hi-09-safe-sms',
+    channel: 'sms',
+    senderName: 'जनता लाइब्रेरी',
+    phoneNumber: 'VM-JANLIB',
+    content:
+      'स्नेहिल अनुस्मारक: आपके द्वारा ली गई हिंदी कहानी की पुस्तक अगले बुधवार तक जमा की जा सकती है।',
+    scenarioLanguage: 'hi',
+  },
+  {
+    id: 'scn-hi-10-safe-call',
+    channel: 'call',
+    senderName: 'आर्यन (पोता)',
+    phoneNumber: '+91 90000 30105',
+    content:
+      'आपका पोता आर्यन स्कूल से घर पहुँचकर आपका हालचाल पूछने और अपनी पढ़ाई के बारे में बताने के लिए कॉल कर रहा है।',
+    scenarioLanguage: 'hi',
+  },
+  {
+    id: 'scn-te-07-safe-sms',
+    channel: 'sms',
+    senderName: 'శ్రీ మెడికల్ స్టోర్',
+    phoneNumber: 'VM-SRIMED',
+    content:
+      'నమస్కారం, మీరు ఆర్డర్ చేసిన నెలవారీ మందులు సిద్ధంగా ఉన్నాయి. సాయంత్రం 7 గంటల లోపు స్టోర్ నుండి తీసుకోవచ్చు.',
+    scenarioLanguage: 'te',
+  },
+  {
+    id: 'scn-te-08-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'లక్ష్మి (కుమార్తె)',
+    phoneNumber: '+91 90000 40102',
+    content:
+      'అమ్మా, ఈ ఆదివారం పిల్లలతో కలిసి భోజనానికి వస్తున్నాము. మీ కోసం వేడివేడి సున్నుండలు తయారు చేశాను!',
+    scenarioLanguage: 'te',
+  },
+  {
+    id: 'scn-te-09-safe-call',
+    channel: 'call',
+    senderName: 'లక్ష్మి (కుమార్తె)',
+    phoneNumber: '+91 90000 40102',
+    content:
+      'మీ కుమార్తె లక్ష్మి సాయంత్రం క్షేమ సమాచారాలు అడగడానికి మరియు ఆదివారం రాక గురించి మాట్లాడటానికి కాల్ చేస్తున్నారు.',
+    scenarioLanguage: 'te',
+  },
+  {
+    id: 'scn-ml-07-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'രാജൻ നായർ (പ്രഭാത നടത്തം)',
+    phoneNumber: '+91 90000 50108',
+    content:
+      'നമസ്കാരം! നാളെ രാവിലെ 6:30-ന് പാർക്കിലെ നടപ്പിന് ശേഷം നമുക്ക് ഒരുമിച്ച് ചായ കുടിക്കാം.',
+    scenarioLanguage: 'ml',
+  },
+  {
+    id: 'scn-ml-08-safe-call',
+    channel: 'call',
+    senderName: 'ശാന്തി ക്ലിനിക്',
+    phoneNumber: '+91 90000 50303',
+    content:
+      'ശാന്തി ക്ലിനിക്കിൽ നിന്ന് നാളെ രാവിലെ 10 മണിക്കുള്ള ഡോക്ടറുടെ സാധാരണ പരിശോധന സമയം ഓർമ്മിപ്പിക്കാൻ വിളിക്കുന്നു.',
+    scenarioLanguage: 'ml',
+  },
+  {
+    id: 'scn-kn-07-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'ಕಿರಣ್ (ಮೊಮ್ಮಗ)',
+    phoneNumber: '+91 90000 60105',
+    content:
+      'ತಾತಾ ನಮಸ್ಕಾರ! ನನ್ನ ಕಾಲೇಜು ಪರೀಕ್ಷೆ ತುಂಬಾ ಚೆನ್ನಾಗಿ ಆಯಿತು. ಶನಿವಾರ ಸಂಜೆ ನಿಮ್ಮನ್ನು ನೋಡಲು ಮನೆಗೆ ಬರುತ್ತೇನೆ.',
+    scenarioLanguage: 'kn',
+  },
+  {
+    id: 'scn-kn-08-safe-call',
+    channel: 'call',
+    senderName: 'ಆರೋಗ್ಯ ಕ್ಲಿನಿಕ್',
+    phoneNumber: '+91 90000 60303',
+    content:
+      'ಆರೋಗ್ಯ ಕ್ಲಿನಿಕ್ ಸ್ವಾಗತಕಾರರು ನಾಳೆ ಬೆಳಿಗ್ಗೆ 10:30 ರ ಸಾಮಾನ್ಯ ಆರೋಗ್ಯ ತಪಾಸಣೆಯ ಸಮಯವನ್ನು ನೆನಪಿಸಲು ಕರೆ ಮಾಡುತ್ತಿದ್ದಾರೆ.',
+    scenarioLanguage: 'kn',
+  },
+  {
+    id: 'scn-bn-07-safe-wa',
+    channel: 'whatsapp',
+    senderName: 'রিয়া (নাতনি)',
+    phoneNumber: '+91 90000 70105',
+    content:
+      'দাদু প্রণাম নিও! আজ আমার গানের অনুষ্ঠানে সবাই খুব প্রশংসা করেছে। রবিবার এসে তোমাকে গান শোনাব!',
+    scenarioLanguage: 'bn',
+  },
+  {
+    id: 'scn-bn-08-safe-call',
+    channel: 'call',
+    senderName: 'ডাঃ সেনের ক্লিনিক',
+    phoneNumber: '+91 90000 70303',
+    content:
+      'ডাঃ সেনের ক্লিনিক থেকে আগামীকাল সকাল ১১টায় আপনার নিয়মিত স্বাস্থ্য পরীক্ষার সময় মনে করিয়ে দিতে কল করা হচ্ছে।',
+    scenarioLanguage: 'bn',
+  },
 ];

@@ -283,10 +283,11 @@ export function usePhoneSimulator() {
         setActiveCallId(instanceId);
         setCallStage('ringing');
 
-        // Auto-timeout unanswered ringing call after 22s so simulation never stalls
+        // Auto-timeout unanswered ringing call (14s for normal calls, 20s for suspicious calls) so simulation never stalls
         if (missedCallTimerRef.current !== null) {
           window.clearTimeout(missedCallTimerRef.current);
         }
+        const ringTimeoutMs = isSuspicious ? 20000 : 14000;
         missedCallTimerRef.current = window.setTimeout(() => {
           setStoredEvents((prev) =>
             prev.map((e) =>
@@ -297,7 +298,7 @@ export function usePhoneSimulator() {
           );
           setActiveCallId((curr) => (curr === instanceId ? null : curr));
           setCallStage((curr) => (curr === 'ringing' ? null : curr));
-        }, 22000);
+        }, ringTimeoutMs);
 
         if (isSuspicious && !alertedInstanceIdsRef.current.has(instanceId)) {
           alertedInstanceIdsRef.current.add(instanceId);
