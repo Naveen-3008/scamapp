@@ -20,6 +20,7 @@ interface IncomingCallOverlayProps {
   callStage: 'ringing' | 'connected';
   language: LanguageCode;
   ringtoneEnabled: boolean;
+  sharedElapsedSeconds?: number;
   onAnswer: () => void;
   onDeclineOrEnd: () => void;
   onToggleRingtone: () => void;
@@ -31,24 +32,28 @@ export const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
   callStage,
   language,
   ringtoneEnabled,
+  sharedElapsedSeconds,
   onAnswer,
   onDeclineOrEnd,
   onToggleRingtone,
   onReopenScamAlert,
 }) => {
   const t = getTranslation(language);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [localElapsedSeconds, setLocalElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    if (callStage !== 'connected') {
-      setElapsedSeconds(0);
+    if (callStage !== 'connected' || sharedElapsedSeconds !== undefined) {
+      setLocalElapsedSeconds(0);
       return;
     }
     const timer = window.setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
+      setLocalElapsedSeconds((prev) => prev + 1);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [callStage, event.instanceId]);
+  }, [callStage, event.instanceId, sharedElapsedSeconds]);
+
+  const displayedSeconds =
+    sharedElapsedSeconds !== undefined ? sharedElapsedSeconds : localElapsedSeconds;
 
   const isSuspicious =
     event.classification.riskLevel !== RiskLevel.NO_OBVIOUS_SIGNS;
@@ -66,7 +71,7 @@ export const IncomingCallOverlay: React.FC<IncomingCallOverlayProps> = ({
         <span className="text-xs font-bold text-slate-200">
           {callStage === 'ringing'
             ? t.incomingCallLabel
-            : `${t.callConnectedLabel} · ${formatDurationMmSs(elapsedSeconds)}`}
+            : `${t.callConnectedLabel} · ${formatDurationMmSs(displayedSeconds)}`}
         </span>
 
         {callStage === 'ringing' && (

@@ -6,11 +6,13 @@ import { LanguageCode } from '../../types';
 interface InitialLanguageSetupProps {
   initialLanguage: LanguageCode;
   onStart: (selectedLanguage: LanguageCode) => void;
+  onSelectLanguageChange?: (selectedLanguage: LanguageCode) => void;
 }
 
 export const InitialLanguageSetup: React.FC<InitialLanguageSetupProps> = ({
   initialLanguage,
   onStart,
+  onSelectLanguageChange,
 }) => {
   const [selected, setSelected] = useState<LanguageCode>(initialLanguage);
   const t = getTranslation(selected);
@@ -57,7 +59,10 @@ export const InitialLanguageSetup: React.FC<InitialLanguageSetupProps> = ({
                 type="button"
                 role="radio"
                 aria-checked={isActive}
-                onClick={() => setSelected(opt.code)}
+                onClick={() => {
+                  setSelected(opt.code);
+                  onSelectLanguageChange?.(opt.code);
+                }}
                 className={`flex min-h-[50px] w-full items-center justify-between rounded-2xl border px-4 py-2.5 text-left transition-colors ${
                   isActive
                     ? 'border-teal-400 bg-teal-500/20 text-white shadow-sm'

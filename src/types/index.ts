@@ -116,6 +116,7 @@ export interface StoredPhoneEvent {
   receivedAtIso: string;
   read: boolean;
   callOutcome?: 'ringing' | 'answered' | 'declined' | 'missed';
+  markedSuspicious?: boolean;
 }
 
 export interface ProcessedPhoneEvent extends StoredPhoneEvent {
@@ -156,10 +157,102 @@ export interface ClassifierRequest {
   phoneNumber: string;
   content: string;
   targetLanguage: LanguageCode;
+  markedSuspicious?: boolean;
 }
 
 export interface IScamClassifierService {
   readonly engineType: 'local-rule-engine' | 'external-api';
   classify(request: ClassifierRequest): Promise<ClassificationResult>;
   classifySync(request: ClassifierRequest): ClassificationResult;
+}
+
+/* ============================================================================
+ * Dual-Phone Real-Time Simulation Types (ElderGuardian ↔ Hacker Phone)
+ * ========================================================================== */
+
+export type DualPhoneEventType =
+  | 'SMS_SENT'
+  | 'SMS_RECEIVED'
+  | 'CALL_STARTED'
+  | 'CALL_ANSWERED'
+  | 'CALL_DECLINED'
+  | 'CALL_ENDED'
+  | 'SCAM_DETECTED'
+  | 'SCENARIO_RESET';
+
+export interface DualPhoneBusEvent {
+  id: string;
+  type: DualPhoneEventType;
+  timestampIso: string;
+  summary: string;
+  riskLevel?: RiskLevel;
+}
+
+export type HackerScreenId =
+  | 'home'
+  | 'messages'
+  | 'phone'
+  | 'contacts'
+  | 'scenarios';
+
+export type HackerScenarioCategory =
+  | 'sms_scams'
+  | 'suspicious_calls'
+  | 'safe_messages'
+  | 'safe_calls';
+
+export interface HackerLibraryScenario {
+  id: string;
+  category: HackerScenarioCategory;
+  name: string;
+  templateLabel: string;
+  channel: 'sms' | 'call';
+  senderName: string;
+  phoneNumber: string;
+  content: string;
+  expectedRiskLabel: 'High Risk' | 'Suspicious' | 'Safe / Ordinary';
+  markedSuspicious: boolean;
+  testingDescription: string;
+}
+
+export interface HackerSentMessage {
+  id: string;
+  recipientName: string;
+  recipientNumber: string;
+  senderName: string;
+  senderNumber: string;
+  content: string;
+  sentAtIso: string;
+  detectedRisk: RiskLevel;
+}
+
+export type SharedCallStatus =
+  | 'ringing'
+  | 'connected'
+  | 'declined'
+  | 'ended'
+  | 'missed';
+
+export interface SharedCallSession {
+  callId: string;
+  elderInstanceId: string;
+  callerName: string;
+  phoneNumber: string;
+  content: string;
+  markedSuspicious: boolean;
+  detectedRisk: RiskLevel;
+  status: SharedCallStatus;
+  startedAtIso: string;
+  durationSeconds: number;
+}
+
+export interface HackerContactPersona {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  roleDescription: string;
+  isReceiverTarget?: boolean;
+  defaultSmsText?: string;
+  defaultCallPitch?: string;
+  markedSuspicious: boolean;
 }

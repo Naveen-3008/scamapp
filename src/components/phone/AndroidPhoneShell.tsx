@@ -73,6 +73,7 @@ export const AndroidPhoneShell: React.FC<AndroidPhoneShellProps> = ({ sim }) => 
     activeAlertEvent,
     activeCallEvent,
     callStage,
+    sharedCallElapsedSeconds,
     speechSnapshot,
     unreadCounts,
     userReplies,
@@ -252,6 +253,7 @@ export const AndroidPhoneShell: React.FC<AndroidPhoneShellProps> = ({ sim }) => 
             <InitialLanguageSetup
               initialLanguage={preferences.language}
               onStart={sim.completeSetup}
+              onSelectLanguageChange={sim.setPendingSetupLanguage}
             />
           ) : (
             <>
@@ -515,6 +517,7 @@ export const AndroidPhoneShell: React.FC<AndroidPhoneShellProps> = ({ sim }) => 
                   callStage={callStage}
                   language={preferences.language}
                   ringtoneEnabled={preferences.ringtoneEnabled}
+                  sharedElapsedSeconds={sharedCallElapsedSeconds}
                   onAnswer={sim.answerActiveCall}
                   onDeclineOrEnd={sim.endOrDeclineActiveCall}
                   onToggleRingtone={sim.toggleRingtone}

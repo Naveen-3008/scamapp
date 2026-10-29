@@ -274,7 +274,7 @@ export class LocalRuleBasedClassifier implements IScamClassifierService {
   }
 
   public classifySync(request: ClassifierRequest): ClassificationResult {
-    const { channel, senderName, content, targetLanguage } = request;
+    const { channel, senderName, content, targetLanguage, markedSuspicious } = request;
     const t = getTranslation(targetLanguage);
     const fullScanText = `${senderName} ${content}`;
 
@@ -337,6 +337,18 @@ export class LocalRuleBasedClassifier implements IScamClassifierService {
       !detectedSigns.includes('remote_screen_sharing_app')
     ) {
       bestCategory = 'fake_kyc';
+    }
+
+    // If a custom simulator test explicitly marks a scenario as suspicious without matching standard keywords
+    if (detectedSigns.length === 0 && markedSuspicious) {
+      if (channel === 'call') {
+        detectedSigns.push('caller_org_impersonation');
+        bestCategory = 'bank_impersonation';
+      } else {
+        detectedSigns.push('urgent_pressure_tactic');
+        bestCategory = 'urgent_financial_request';
+      }
+      rawScore = 45;
     }
 
     let heuristicScore: number;

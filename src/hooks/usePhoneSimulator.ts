@@ -9,6 +9,7 @@ import { getScamClassifier } from '../services/scamClassifier';
 import { SpeechStatusSnapshot, speechService } from '../services/speechService';
 import {
   CapturedPhoto,
+  ClassificationResult,
   LanguageCode,
   PhoneScreenId,
   ProcessedPhoneEvent,
@@ -55,6 +56,28 @@ const INITIAL_GALLERY_PHOTOS: CapturedPhoto[] = [
   },
 ];
 
+export interface UsePhoneSimulatorCallbacks {
+  onCallAnswered?: (instanceId: string) => void;
+  onCallDeclined?: (instanceId: string) => void;
+  onCallEnded?: (instanceId: string) => void;
+  onCallMissed?: (instanceId: string) => void;
+  onScamDetected?: (event: ProcessedPhoneEvent) => void;
+}
+
+export interface ExternalSmsPayload {
+  senderName: string;
+  phoneNumber: string;
+  content: string;
+  markedSuspicious?: boolean;
+}
+
+export interface ExternalCallPayload {
+  callerName: string;
+  phoneNumber: string;
+  content: string;
+  markedSuspicious?: boolean;
+}
+
 function generateId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -62,7 +85,7 @@ function generateId(): string {
   return `evt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function usePhoneSimulator() {
+export function usePhoneSimulator(callbacks?: UsePhoneSimulatorCallbacks) {
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>(
     PREFS_KEY,
     DEFAULT_PREFS
@@ -72,7 +95,7 @@ export function usePhoneSimulator() {
     []
   );
 
-  // Android OS UI state
+  // Smartphone OS UI state
   const [currentScreen, setCurrentScreen] = useState<PhoneScreenId>('home');
   const [screenHistory, setScreenHistory] = useState<PhoneScreenId[]>([]);
   const [recentApps, setRecentApps] = useState<PhoneScreenId[]>([]);
@@ -88,6 +111,9 @@ export function usePhoneSimulator() {
   const [alertQueue, setAlertQueue] = useState<string[]>([]);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [callStage, setCallStage] = useState<'ringing' | 'connected' | null>(null);
+  const [sharedCallElapsedSeconds, setSharedCallElapsedSeconds] = useState<
+    number | undefined
+  >(undefined);
   const [userReplies, setUserReplies] = useState<Record<string, string[]>>({});
   const [galleryPhotos, setGalleryPhotos] = useState<CapturedPhoto[]>(
     INITIAL_GALLERY_PHOTOS
@@ -99,7 +125,7 @@ export function usePhoneSimulator() {
     availableVoicesCount: 0,
   });
 
-  // Refs for clean non-duplicating timers & alert tracking
+  // Refs for clean non-duplicating timers, synchronous call locks, & alert tracking
   const arrivalTimerRef = useRef<number | null>(null);
   const alertRevealTimerRef = useRef<number | null>(null);
   const headsUpTimerRef = useRef<number | null>(null);
@@ -109,9 +135,16 @@ export function usePhoneSimulator() {
   const alertedInstanceIdsRef = useRef<Set<string>>(new Set());
   const narratedAlertIdsRef = useRef<Set<string>>(new Set());
   const sessionEventCountRef = useRef<number>(0);
+  const activeCallIdRef = useRef<string | null>(null);
+  const callStageRef = useRef<'ringing' | 'connected' | null>(null);
   const prefsRef = useRef<UserPreferences>(preferences);
+  const pendingSetupLanguageRef = useRef<LanguageCode>(preferences.language);
+  const callbacksRef = useRef<UsePhoneSimulatorCallbacks | undefined>(callbacks);
 
   prefsRef.current = preferences;
+  activeCallIdRef.current = activeCallId;
+  callStageRef.current = callStage;
+  callbacksRef.current = callbacks;
 
   const classifier = getScamClassifier();
 
@@ -156,6 +189,7 @@ export function usePhoneSimulator() {
         phoneNumber: evt.phoneNumber,
         content: evt.content,
         targetLanguage: preferences.language,
+        markedSuspicious: evt.markedSuspicious,
       }),
     }));
   }, [storedEvents, preferences.language, classifier]);
@@ -199,7 +233,7 @@ export function usePhoneSimulator() {
     }
   }, [activeAlertEvent]);
 
-  // Manage ringtone for ordinary incoming calls (or when alert is dismissed while still ringing)
+  // Manage ringtone for incoming calls while ringing (pauses automatically when full-screen voice alert opens)
   useEffect(() => {
     if (
       activeCallEvent &&
@@ -243,19 +277,41 @@ export function usePhoneSimulator() {
     };
   }, [clearTimers]);
 
-  // Core helper to process and dispatch one simulated scenario
+  // Ensures ElderGuardian screen is active if user initiates an event from Hacker Phone before clicking Start
+  const ensureReceiverReadyForController = useCallback((): LanguageCode => {
+    if (!prefsRef.current.setupCompleted) {
+      const chosenLang = pendingSetupLanguageRef.current || prefsRef.current.language;
+      const updatedPrefs: UserPreferences = {
+        ...prefsRef.current,
+        language: chosenLang,
+        setupCompleted: true,
+      };
+      prefsRef.current = updatedPrefs;
+      setPreferences(updatedPrefs);
+      setCurrentScreen('home');
+      return chosenLang;
+    }
+    return prefsRef.current.language;
+  }, [setPreferences]);
+
+  // Core helper to process and dispatch one simulated scenario (autonomous or external controller)
   const dispatchScenario = useCallback(
-    (scenario: SamplePhoneScenario) => {
+    (
+      scenario: SamplePhoneScenario,
+      options?: { markedSuspicious?: boolean; activeLanguageOverride?: LanguageCode }
+    ): { instanceId: string; classification: ClassificationResult } => {
       const instanceId = generateId();
       const nowIso = new Date().toISOString();
-      const currentPrefs = prefsRef.current;
+      const targetLang =
+        options?.activeLanguageOverride || prefsRef.current.language;
 
       const classification = classifier.classifySync({
         channel: scenario.channel,
         senderName: scenario.senderName,
         phoneNumber: scenario.phoneNumber,
         content: scenario.content,
-        targetLanguage: currentPrefs.language,
+        targetLanguage: targetLang,
+        markedSuspicious: options?.markedSuspicious,
       });
 
       const isSuspicious =
@@ -272,22 +328,34 @@ export function usePhoneSimulator() {
         receivedAtIso: nowIso,
         read: false,
         callOutcome: scenario.channel === 'call' ? 'ringing' : undefined,
+        markedSuspicious: options?.markedSuspicious,
+      };
+
+      const processedEvt: ProcessedPhoneEvent = {
+        ...newEvent,
+        classification,
       };
 
       setStoredEvents((prev) => [...prev, newEvent].slice(-MAX_STORED_EVENTS));
       sessionEventCountRef.current += 1;
       setSimulationTick((t) => t + 1);
 
+      if (isSuspicious) {
+        callbacksRef.current?.onScamDetected?.(processedEvt);
+      }
+
       if (scenario.channel === 'call') {
         setHeadsUpEventId(null);
+        activeCallIdRef.current = instanceId;
+        callStageRef.current = 'ringing';
         setActiveCallId(instanceId);
         setCallStage('ringing');
 
-        // Auto-timeout unanswered ringing call (14s for normal calls, 20s for suspicious calls) so simulation never stalls
+        // Auto-timeout unanswered ringing call (16s normal, 22s suspicious) so simulation never stalls
         if (missedCallTimerRef.current !== null) {
           window.clearTimeout(missedCallTimerRef.current);
         }
-        const ringTimeoutMs = isSuspicious ? 20000 : 14000;
+        const ringTimeoutMs = isSuspicious ? 22000 : 16000;
         missedCallTimerRef.current = window.setTimeout(() => {
           setStoredEvents((prev) =>
             prev.map((e) =>
@@ -296,13 +364,18 @@ export function usePhoneSimulator() {
                 : e
             )
           );
-          setActiveCallId((curr) => (curr === instanceId ? null : curr));
-          setCallStage((curr) => (curr === 'ringing' ? null : curr));
+          if (activeCallIdRef.current === instanceId) {
+            activeCallIdRef.current = null;
+            callStageRef.current = null;
+            setActiveCallId(null);
+            setCallStage(null);
+            callbacksRef.current?.onCallMissed?.(instanceId);
+          }
         }, ringTimeoutMs);
 
         if (isSuspicious && !alertedInstanceIdsRef.current.has(instanceId)) {
           alertedInstanceIdsRef.current.add(instanceId);
-          // Let the Incoming Call Screen visibly ring for 2.2s first so user sees the call arriving
+          // Let the Incoming Call Screen visibly ring for 2.0s first so user sees the call arriving
           if (alertRevealTimerRef.current !== null) {
             window.clearTimeout(alertRevealTimerRef.current);
           }
@@ -310,32 +383,37 @@ export function usePhoneSimulator() {
             setAlertQueue((prev) =>
               prev.includes(instanceId) ? prev : [...prev, instanceId]
             );
-          }, 2200);
+          }, 2000);
         }
-        return;
+        return { instanceId, classification };
       }
 
-      // SMS or WhatsApp arrival: show realistic Android Heads-Up Notification first
+      // SMS or WhatsApp arrival: show realistic Heads-Up Notification on current or lock screen
       setHeadsUpEventId(instanceId);
       if (headsUpTimerRef.current !== null) {
         window.clearTimeout(headsUpTimerRef.current);
       }
+      if (alertRevealTimerRef.current !== null) {
+        window.clearTimeout(alertRevealTimerRef.current);
+      }
 
       if (isSuspicious && !alertedInstanceIdsRef.current.has(instanceId)) {
         alertedInstanceIdsRef.current.add(instanceId);
-        // Brief 750ms beat so user sees the incoming notification banner before full-screen shield alert opens
+        // Brief 700ms beat so user sees the incoming notification banner before full-screen scam alert opens
         alertRevealTimerRef.current = window.setTimeout(() => {
-          setHeadsUpEventId(null);
+          setHeadsUpEventId((curr) => (curr === instanceId ? null : curr));
           setAlertQueue((prev) =>
             prev.includes(instanceId) ? prev : [...prev, instanceId]
           );
-        }, 750);
+        }, 700);
       } else {
         // Ordinary harmless message: show normal notification for 4.2s, no scam alert
         headsUpTimerRef.current = window.setTimeout(() => {
           setHeadsUpEventId((curr) => (curr === instanceId ? null : curr));
         }, 4200);
       }
+
+      return { instanceId, classification };
     },
     [classifier, setStoredEvents]
   );
@@ -388,6 +466,142 @@ export function usePhoneSimulator() {
     dispatchScenario,
   ]);
 
+  /* ==========================================================================
+   * External Dual-Phone Bridge Actions (Driven by Hacker Phone — Simulator)
+   * ======================================================================== */
+
+  const receiveExternalSms = useCallback(
+    (payload: ExternalSmsPayload): { instanceId: string; classification: ClassificationResult } => {
+      speechService.unlockFromUserGesture();
+      ringtoneService.unlock();
+      if (arrivalTimerRef.current !== null) {
+        window.clearTimeout(arrivalTimerRef.current);
+        arrivalTimerRef.current = null;
+      }
+      // Pause background auto-stream while user actively tests from Hacker Phone controller
+      setIsPaused(true);
+
+      const activeLang = ensureReceiverReadyForController();
+      return dispatchScenario(
+        {
+          id: `hacker-sms-${Date.now()}`,
+          channel: 'sms',
+          senderName: payload.senderName.trim() || 'Unknown Sender',
+          phoneNumber: payload.phoneNumber.trim() || '+91 90000 00001',
+          content: payload.content.trim(),
+          scenarioLanguage: activeLang,
+        },
+        {
+          markedSuspicious: payload.markedSuspicious,
+          activeLanguageOverride: activeLang,
+        }
+      );
+    },
+    [dispatchScenario, ensureReceiverReadyForController]
+  );
+
+  const receiveExternalCall = useCallback(
+    (
+      payload: ExternalCallPayload
+    ): { instanceId: string; classification: ClassificationResult } | null => {
+      // Prevent multiple simultaneous call sessions
+      if (activeCallIdRef.current !== null) {
+        return null;
+      }
+
+      speechService.unlockFromUserGesture();
+      ringtoneService.unlock();
+      if (arrivalTimerRef.current !== null) {
+        window.clearTimeout(arrivalTimerRef.current);
+        arrivalTimerRef.current = null;
+      }
+      setIsPaused(true);
+
+      const activeLang = ensureReceiverReadyForController();
+      return dispatchScenario(
+        {
+          id: `hacker-call-${Date.now()}`,
+          channel: 'call',
+          senderName: payload.callerName.trim() || 'Unknown Caller',
+          phoneNumber: payload.phoneNumber.trim() || '+91 90000 88410',
+          content: payload.content.trim(),
+          scenarioLanguage: activeLang,
+        },
+        {
+          markedSuspicious: payload.markedSuspicious,
+          activeLanguageOverride: activeLang,
+        }
+      );
+    },
+    [dispatchScenario, ensureReceiverReadyForController]
+  );
+
+  const terminateExternalCallFromRemote = useCallback(() => {
+    const closingId = activeCallIdRef.current;
+    if (!closingId) return;
+
+    if (missedCallTimerRef.current !== null) {
+      window.clearTimeout(missedCallTimerRef.current);
+      missedCallTimerRef.current = null;
+    }
+    if (alertRevealTimerRef.current !== null) {
+      window.clearTimeout(alertRevealTimerRef.current);
+      alertRevealTimerRef.current = null;
+    }
+    ringtoneService.stopRinging();
+    speechService.cancel();
+
+    const wasConnected = callStageRef.current === 'connected';
+    const outcome = wasConnected ? 'answered' : 'missed';
+
+    setStoredEvents((prev) =>
+      prev.map((e) =>
+        e.instanceId === closingId
+          ? { ...e, read: true, callOutcome: outcome }
+          : e
+      )
+    );
+    setAlertQueue((prev) => prev.filter((id) => id !== closingId));
+    activeCallIdRef.current = null;
+    callStageRef.current = null;
+    setActiveCallId(null);
+    setCallStage(null);
+    setSharedCallElapsedSeconds(undefined);
+  }, [setStoredEvents]);
+
+  const resetCurrentScenarioOnReceiver = useCallback(() => {
+    clearTimers();
+    speechService.cancel();
+    ringtoneService.stopRinging();
+    const closingCallId = activeCallIdRef.current;
+    if (closingCallId) {
+      setStoredEvents((prev) =>
+        prev.map((e) =>
+          e.instanceId === closingCallId && e.callOutcome === 'ringing'
+            ? { ...e, read: true, callOutcome: 'missed' }
+            : e
+        )
+      );
+    }
+    activeCallIdRef.current = null;
+    callStageRef.current = null;
+    setAlertQueue([]);
+    setActiveCallId(null);
+    setCallStage(null);
+    setSharedCallElapsedSeconds(undefined);
+    setHeadsUpEventId(null);
+    setFocusedEventId(null);
+    setIsShadeOpen(false);
+    setIsRecentsOpen(false);
+    if (prefsRef.current.setupCompleted) {
+      setCurrentScreen('home');
+    }
+  }, [clearTimers, setStoredEvents]);
+
+  const setPendingSetupLanguage = useCallback((language: LanguageCode) => {
+    pendingSetupLanguageRef.current = language;
+  }, []);
+
   // Navigation Actions
   const openApp = useCallback(
     (target: PhoneScreenId, eventIdToFocus: string | null = null) => {
@@ -412,10 +626,9 @@ export function usePhoneSimulator() {
       });
 
       if (target !== 'home' && target !== 'lock') {
-        setRecentApps((prev) => [
-          target,
-          ...prev.filter((app) => app !== target),
-        ].slice(0, 6));
+        setRecentApps((prev) =>
+          [target, ...prev.filter((app) => app !== target)].slice(0, 6)
+        );
       }
     },
     [setStoredEvents]
@@ -486,8 +699,6 @@ export function usePhoneSimulator() {
     setAlertQueue((prev) => prev.slice(1));
 
     if (evt.channel === 'call') {
-      // If call is still ringing on screen, user returns directly to the call screen;
-      // otherwise open the Phone app Recents tab focused on this call
       if (activeCallId !== evt.instanceId) {
         openApp('phone', evt.instanceId);
       }
@@ -506,26 +717,35 @@ export function usePhoneSimulator() {
     );
   }, []);
 
-  // Call Actions
+  // Call Actions (Synchronized with Hacker Phone via callbacks)
   const answerActiveCall = useCallback(() => {
-    if (!activeCallId) return;
+    const answeringId = activeCallIdRef.current;
+    if (!answeringId) return;
+
+    speechService.unlockFromUserGesture();
+    ringtoneService.unlock();
+
     if (missedCallTimerRef.current !== null) {
       window.clearTimeout(missedCallTimerRef.current);
       missedCallTimerRef.current = null;
     }
     ringtoneService.stopRinging();
+    callStageRef.current = 'connected';
     setCallStage('connected');
     setStoredEvents((prev) =>
       prev.map((e) =>
-        e.instanceId === activeCallId
+        e.instanceId === answeringId
           ? { ...e, read: true, callOutcome: 'answered' }
           : e
       )
     );
-  }, [activeCallId, setStoredEvents]);
+    callbacksRef.current?.onCallAnswered?.(answeringId);
+  }, [setStoredEvents]);
 
   const endOrDeclineActiveCall = useCallback(() => {
-    if (!activeCallId) return;
+    const closingId = activeCallIdRef.current;
+    if (!closingId) return;
+
     if (missedCallTimerRef.current !== null) {
       window.clearTimeout(missedCallTimerRef.current);
       missedCallTimerRef.current = null;
@@ -535,8 +755,11 @@ export function usePhoneSimulator() {
       alertRevealTimerRef.current = null;
     }
     ringtoneService.stopRinging();
-    const outcome = callStage === 'connected' ? 'answered' : 'declined';
-    const closingId = activeCallId;
+    speechService.cancel();
+
+    const wasConnected = callStageRef.current === 'connected';
+    const outcome = wasConnected ? 'answered' : 'declined';
+
     setStoredEvents((prev) =>
       prev.map((e) =>
         e.instanceId === closingId
@@ -544,12 +767,23 @@ export function usePhoneSimulator() {
           : e
       )
     );
+    setAlertQueue((prev) => prev.filter((id) => id !== closingId));
+    activeCallIdRef.current = null;
+    callStageRef.current = null;
     setActiveCallId(null);
     setCallStage(null);
-  }, [activeCallId, callStage, setStoredEvents]);
+    setSharedCallElapsedSeconds(undefined);
+
+    if (wasConnected) {
+      callbacksRef.current?.onCallEnded?.(closingId);
+    } else {
+      callbacksRef.current?.onCallDeclined?.(closingId);
+    }
+  }, [setStoredEvents]);
 
   const startSimulatedOutboundCall = useCallback(
     (name: string, phoneNumber: string, safeSummary: string) => {
+      if (activeCallIdRef.current !== null) return;
       ringtoneService.unlock();
       const instanceId = generateId();
       const evt: StoredPhoneEvent = {
@@ -564,6 +798,8 @@ export function usePhoneSimulator() {
         callOutcome: 'answered',
       };
       setStoredEvents((prev) => [...prev, evt].slice(-MAX_STORED_EVENTS));
+      activeCallIdRef.current = instanceId;
+      callStageRef.current = 'connected';
       setActiveCallId(instanceId);
       setCallStage('connected');
     },
@@ -575,6 +811,7 @@ export function usePhoneSimulator() {
     (language: LanguageCode) => {
       speechService.unlockFromUserGesture();
       ringtoneService.unlock();
+      pendingSetupLanguageRef.current = language;
       deckRef.current = buildScenarioDeck(language);
       setIsPaused(false);
       setCurrentScreen('home');
@@ -590,6 +827,7 @@ export function usePhoneSimulator() {
   const changeLanguage = useCallback(
     (language: LanguageCode) => {
       speechService.cancel();
+      pendingSetupLanguageRef.current = language;
       deckRef.current = buildScenarioDeck(
         language,
         recentScenarioIdsRef.current.slice(-10)
@@ -711,9 +949,12 @@ export function usePhoneSimulator() {
     narratedAlertIdsRef.current.clear();
     recentScenarioIdsRef.current = [];
     deckRef.current = buildScenarioDeck(prefsRef.current.language);
+    activeCallIdRef.current = null;
+    callStageRef.current = null;
     setAlertQueue([]);
     setActiveCallId(null);
     setCallStage(null);
+    setSharedCallElapsedSeconds(undefined);
     setHeadsUpEventId(null);
     setFocusedEventId(null);
     setStoredEvents([]);
@@ -738,9 +979,12 @@ export function usePhoneSimulator() {
     ringtoneService.stopRinging();
     alertedInstanceIdsRef.current.clear();
     narratedAlertIdsRef.current.clear();
+    activeCallIdRef.current = null;
+    callStageRef.current = null;
     setAlertQueue([]);
     setActiveCallId(null);
     setCallStage(null);
+    setSharedCallElapsedSeconds(undefined);
     setHeadsUpEventId(null);
     setFocusedEventId(null);
     setStoredEvents([]);
@@ -801,11 +1045,14 @@ export function usePhoneSimulator() {
     activeAlertEvent,
     activeCallEvent,
     callStage,
+    sharedCallElapsedSeconds,
+    setSharedCallElapsedSeconds,
     speechSnapshot,
     unreadCounts,
     userReplies,
     galleryPhotos,
     completeSetup,
+    setPendingSetupLanguage,
     openApp,
     navigateBack,
     navigateHome,
@@ -817,6 +1064,10 @@ export function usePhoneSimulator() {
     answerActiveCall,
     endOrDeclineActiveCall,
     startSimulatedOutboundCall,
+    receiveExternalSms,
+    receiveExternalCall,
+    terminateExternalCallFromRemote,
+    resetCurrentScenarioOnReceiver,
     changeLanguage,
     toggleVoice,
     enableVoiceAndNarrate,
