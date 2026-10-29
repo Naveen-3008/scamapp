@@ -71,6 +71,13 @@ export interface ExternalSmsPayload {
   markedSuspicious?: boolean;
 }
 
+export interface ExternalWhatsAppPayload {
+  senderName: string;
+  phoneNumber: string;
+  content: string;
+  markedSuspicious?: boolean;
+}
+
 export interface ExternalCallPayload {
   callerName: string;
   phoneNumber: string;
@@ -500,6 +507,37 @@ export function usePhoneSimulator(callbacks?: UsePhoneSimulatorCallbacks) {
     [dispatchScenario, ensureReceiverReadyForController]
   );
 
+  const receiveExternalWhatsApp = useCallback(
+    (
+      payload: ExternalWhatsAppPayload
+    ): { instanceId: string; classification: ClassificationResult } => {
+      speechService.unlockFromUserGesture();
+      ringtoneService.unlock();
+      if (arrivalTimerRef.current !== null) {
+        window.clearTimeout(arrivalTimerRef.current);
+        arrivalTimerRef.current = null;
+      }
+      setIsPaused(true);
+
+      const activeLang = ensureReceiverReadyForController();
+      return dispatchScenario(
+        {
+          id: `hacker-wa-${Date.now()}`,
+          channel: 'whatsapp',
+          senderName: payload.senderName.trim() || 'WhatsApp Sender',
+          phoneNumber: payload.phoneNumber.trim() || '+91 90000 00311',
+          content: payload.content.trim(),
+          scenarioLanguage: activeLang,
+        },
+        {
+          markedSuspicious: payload.markedSuspicious,
+          activeLanguageOverride: activeLang,
+        }
+      );
+    },
+    [dispatchScenario, ensureReceiverReadyForController]
+  );
+
   const receiveExternalCall = useCallback(
     (
       payload: ExternalCallPayload
@@ -689,8 +727,12 @@ export function usePhoneSimulator(callbacks?: UsePhoneSimulatorCallbacks) {
   // Full-Screen Scam Alert Actions
   const dismissActiveAlert = useCallback(() => {
     speechService.cancel();
+    const dismissedEvent = activeAlertEvent;
     setAlertQueue((prev) => prev.slice(1));
-  }, []);
+    if (dismissedEvent && dismissedEvent.channel === 'whatsapp') {
+      openApp('whatsapp', dismissedEvent.instanceId);
+    }
+  }, [activeAlertEvent, openApp]);
 
   const viewAlertDetails = useCallback(() => {
     if (!activeAlertEvent) return;
@@ -1065,6 +1107,7 @@ export function usePhoneSimulator(callbacks?: UsePhoneSimulatorCallbacks) {
     endOrDeclineActiveCall,
     startSimulatedOutboundCall,
     receiveExternalSms,
+    receiveExternalWhatsApp,
     receiveExternalCall,
     terminateExternalCallFromRemote,
     resetCurrentScenarioOnReceiver,

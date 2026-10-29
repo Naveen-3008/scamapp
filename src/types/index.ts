@@ -173,6 +173,9 @@ export interface IScamClassifierService {
 export type DualPhoneEventType =
   | 'SMS_SENT'
   | 'SMS_RECEIVED'
+  | 'WHATSAPP_MESSAGE_SENT'
+  | 'WHATSAPP_MESSAGE_RECEIVED'
+  | 'WHATSAPP_NOTIFICATION_RECEIVED'
   | 'CALL_STARTED'
   | 'CALL_ANSWERED'
   | 'CALL_DECLINED'
@@ -191,12 +194,14 @@ export interface DualPhoneBusEvent {
 export type HackerScreenId =
   | 'home'
   | 'messages'
+  | 'whatsapp'
   | 'phone'
   | 'contacts'
   | 'scenarios';
 
 export type HackerScenarioCategory =
   | 'sms_scams'
+  | 'whatsapp_scams'
   | 'suspicious_calls'
   | 'safe_messages'
   | 'safe_calls';
@@ -206,7 +211,7 @@ export interface HackerLibraryScenario {
   category: HackerScenarioCategory;
   name: string;
   templateLabel: string;
-  channel: 'sms' | 'call';
+  channel: 'sms' | 'whatsapp' | 'call';
   senderName: string;
   phoneNumber: string;
   content: string;
@@ -253,6 +258,7 @@ export interface HackerContactPersona {
   roleDescription: string;
   isReceiverTarget?: boolean;
   defaultSmsText?: string;
+  defaultWhatsAppText?: string;
   defaultCallPitch?: string;
   markedSuspicious: boolean;
 }

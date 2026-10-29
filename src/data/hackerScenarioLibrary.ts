@@ -197,11 +197,133 @@ export const HACKER_SCENARIO_LIBRARY: HackerLibraryScenario[] = [
       'Tests shortened URL detection combined with artificial countdown urgency.',
   },
 
-  // ==================== 2. SAFE MESSAGES (ORDINARY COMPARISON) ====================
+  // ==================== 1B. WHATSAPP SCAMS (8 TEMPLATES) ====================
+  {
+    id: 'lib-wa-bank-support',
+    category: 'whatsapp_scams',
+    name: 'Fake Bank Support WhatsApp Alert',
+    templateLabel: 'Fake bank support message',
+    channel: 'whatsapp',
+    senderName: 'National Bank Care',
+    phoneNumber: '+91 90000 00311',
+    content:
+      'URGENT Bank Support: Your debit card and savings account will be blocked within 2 hours due to incomplete verification. Tap https://ntbank-wa-verify.example.com immediately.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests WhatsApp bank impersonation combining account freeze threats with a phishing link.',
+  },
+  {
+    id: 'lib-wa-otp-request',
+    category: 'whatsapp_scams',
+    name: 'WhatsApp 6-Digit OTP Request',
+    templateLabel: 'OTP request scam',
+    channel: 'whatsapp',
+    senderName: 'Card Security Desk',
+    phoneNumber: '+91 90000 00318',
+    content:
+      'URGENT Security Alert: ₹34,000 is being debited from your bank account. Reply here on WhatsApp with your 6-digit OTP immediately to cancel this transaction.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests detection of WhatsApp messages pressuring seniors to share a secret one-time password.',
+  },
+  {
+    id: 'lib-wa-upi-payment',
+    category: 'whatsapp_scams',
+    name: 'Suspicious UPI Collect & Cashback',
+    templateLabel: 'Suspicious payment & UPI request',
+    channel: 'whatsapp',
+    senderName: 'Gas Subsidy Helpdesk',
+    phoneNumber: '+91 90000 00325',
+    content:
+      'Hello! Your ₹3,800 senior gas subsidy refund is ready on WhatsApp Pay. Open https://upi-claim-wa.example.org and enter your UPI PIN to receive the money.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests WhatsApp UPI PIN collect-request fraud disguised as a subsidy refund.',
+  },
+  {
+    id: 'lib-wa-parcel-delivery',
+    category: 'whatsapp_scams',
+    name: 'Fake WhatsApp Parcel Delivery Fee',
+    templateLabel: 'Fake parcel delivery message',
+    channel: 'whatsapp',
+    senderName: 'SwiftParcel Express',
+    phoneNumber: '+91 90000 00342',
+    content:
+      'SwiftParcel WhatsApp Desk: Your package #WP8821 is held due to missing house number. Pay ₹29 delivery fee within 2 hours at https://wa-parcel-fee.example.net',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests fake courier address-update fee links sent over WhatsApp.',
+  },
+  {
+    id: 'lib-wa-lottery-prize',
+    category: 'whatsapp_scams',
+    name: 'WhatsApp Festival Bumper Prize',
+    templateLabel: 'Lottery and prize scam',
+    channel: 'whatsapp',
+    senderName: 'WhatsApp Lucky Draw',
+    phoneNumber: '+91 90000 00359',
+    content:
+      'Congratulations! Your WhatsApp number won ₹25,00,000 in the Festival Lucky Draw! Open https://wa-prize-desk.example.org and enter your UPI PIN to claim.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests unsolicited WhatsApp lottery winner claims asking for a UPI PIN.',
+  },
+  {
+    id: 'lib-wa-fake-job',
+    category: 'whatsapp_scams',
+    name: 'Work-From-Home Daily Task Offer',
+    templateLabel: 'Fake job offer',
+    channel: 'whatsapp',
+    senderName: 'HR Recruiting Desk',
+    phoneNumber: '+91 90000 00366',
+    content:
+      'Part-time work from home on WhatsApp! Earn ₹5,000 daily simply by rating travel photos. Tap https://wa-daily-jobs.example.org to join now.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests WhatsApp task-job recruitment messages promising unrealistic daily earnings.',
+  },
+  {
+    id: 'lib-wa-suspicious-link',
+    category: 'whatsapp_scams',
+    name: 'Shortened Reward Phishing Link',
+    templateLabel: 'Suspicious link',
+    channel: 'whatsapp',
+    senderName: 'Senior Rewards Club',
+    phoneNumber: '+91 90000 00374',
+    content:
+      'URGENT: Your ₹2,500 grocery voucher expires within 2 hours. Tap http://bit.ly/wa-voucher-claim-example immediately to redeem.',
+    expectedRiskLabel: 'Suspicious',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests shortened URL phishing detection inside a WhatsApp chat message.',
+  },
+  {
+    id: 'lib-wa-family-impersonation',
+    category: 'whatsapp_scams',
+    name: 'Family Member "New Number" Emergency',
+    templateLabel: 'Impersonation of family member',
+    channel: 'whatsapp',
+    senderName: 'Rohan (New Number)',
+    phoneNumber: '+91 90000 44210',
+    content:
+      'Hi Dad, I dropped my phone and this is my new WhatsApp number. I have an urgent bill to pay right now — please transfer ₹18,500 via UPI to 90000-44210 immediately. I will pay you back tonight.',
+    expectedRiskLabel: 'High Risk',
+    markedSuspicious: true,
+    testingDescription:
+      'Tests detection of classic WhatsApp family-impersonation ("lost phone / new number") urgent money requests.',
+  },
+
+  // ==================== 2. SAFE MESSAGES (SMS & WHATSAPP COMPARISON) ====================
   {
     id: 'lib-sms-safe-clinic',
     category: 'safe_messages',
-    name: 'Eye Clinic Checkup Reminder',
+    name: 'Eye Clinic Checkup Reminder (SMS)',
     templateLabel: 'Ordinary legitimate-looking messages (Clinic)',
     channel: 'sms',
     senderName: 'Sunrise Eye Clinic',
@@ -216,7 +338,7 @@ export const HACKER_SCENARIO_LIBRARY: HackerLibraryScenario[] = [
   {
     id: 'lib-sms-safe-family',
     category: 'safe_messages',
-    name: 'Daughter Dinner & Evening Check-In',
+    name: 'Daughter Dinner & Evening Check-In (SMS)',
     templateLabel: 'Ordinary legitimate-looking messages (Family)',
     channel: 'sms',
     senderName: 'Priya (Daughter)',
@@ -231,7 +353,7 @@ export const HACKER_SCENARIO_LIBRARY: HackerLibraryScenario[] = [
   {
     id: 'lib-sms-safe-pharmacy',
     category: 'safe_messages',
-    name: 'Prepaid Pharmacy Refill Ready',
+    name: 'Prepaid Pharmacy Refill Ready (SMS)',
     templateLabel: 'Ordinary legitimate-looking messages (Pharmacy)',
     channel: 'sms',
     senderName: 'CarePlus Pharmacy',
@@ -242,6 +364,51 @@ export const HACKER_SCENARIO_LIBRARY: HackerLibraryScenario[] = [
     markedSuspicious: false,
     testingDescription:
       'Tests negation-guard accuracy so legitimate "no OTP or payment required" notices are not misflagged.',
+  },
+  {
+    id: 'lib-wa-safe-daughter',
+    category: 'safe_messages',
+    name: 'Daughter Morning Check-In (WhatsApp)',
+    templateLabel: 'Ordinary harmless message (Family Check-In)',
+    channel: 'whatsapp',
+    senderName: 'Priya (Daughter)',
+    phoneNumber: '+91 90000 10202',
+    content:
+      'Good morning Appa! Just messaging on WhatsApp to say we reached home safely. Remember to drink warm water after your morning walk!',
+    expectedRiskLabel: 'Safe / Ordinary',
+    markedSuspicious: false,
+    testingDescription:
+      'Verifies an ordinary family WhatsApp message arrives in WhatsApp with notification and zero false scam warning.',
+  },
+  {
+    id: 'lib-wa-safe-walking-group',
+    category: 'safe_messages',
+    name: 'Morning Park Walk Group Note (WhatsApp)',
+    templateLabel: 'Ordinary harmless message (Park Walk Group)',
+    channel: 'whatsapp',
+    senderName: 'Park Walking Friends',
+    phoneNumber: '+91 90000 10315',
+    content:
+      'Good evening everyone! Tomorrow morning our 6:30 AM park walk will meet near the banyan tree gate as usual. See you all there!',
+    expectedRiskLabel: 'Safe / Ordinary',
+    markedSuspicious: false,
+    testingDescription:
+      'Verifies harmless community WhatsApp chat messages arrive quietly without triggering ElderGuardian alerts.',
+  },
+  {
+    id: 'lib-wa-safe-clinic',
+    category: 'safe_messages',
+    name: 'Clinic Appointment Confirmation (WhatsApp)',
+    templateLabel: 'Ordinary harmless message (Clinic Confirmation)',
+    channel: 'whatsapp',
+    senderName: 'Sunrise Eye Clinic',
+    phoneNumber: '+91 90000 10200',
+    content:
+      'Hello from Sunrise Eye Clinic! Your 10:30 AM checkup tomorrow with Dr. Meera Nair is confirmed. Already paid — no OTP or payment required.',
+    expectedRiskLabel: 'Safe / Ordinary',
+    markedSuspicious: false,
+    testingDescription:
+      'Verifies legitimate healthcare WhatsApp confirmations pass cleanly without false-positive warnings.',
   },
 
   // ==================== 3. SUSPICIOUS CALLS ====================
@@ -358,6 +525,10 @@ export const HACKER_SMS_TEMPLATES = HACKER_SCENARIO_LIBRARY.filter(
   (s) => s.channel === 'sms'
 );
 
+export const HACKER_WHATSAPP_TEMPLATES = HACKER_SCENARIO_LIBRARY.filter(
+  (s) => s.channel === 'whatsapp'
+);
+
 export const HACKER_CALL_PRESETS = HACKER_SCENARIO_LIBRARY.filter(
   (s) => s.channel === 'call'
 );
@@ -370,6 +541,7 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     roleDescription: 'Simulated Receiver Phone (Left Device)',
     isReceiverTarget: true,
     defaultSmsText: HACKER_SMS_TEMPLATES[0].content,
+    defaultWhatsAppText: HACKER_WHATSAPP_TEMPLATES[0].content,
     defaultCallPitch: HACKER_CALL_PRESETS[0].content,
     markedSuspicious: true,
   },
@@ -379,7 +551,21 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     phoneNumber: '+91 90000 00299',
     roleDescription: 'Spoofed Card Security Persona (Suspicious)',
     defaultSmsText: HACKER_SMS_TEMPLATES[1].content,
+    defaultWhatsAppText: HACKER_WHATSAPP_TEMPLATES[1].content,
     defaultCallPitch: HACKER_CALL_PRESETS[0].content,
+    markedSuspicious: true,
+  },
+  {
+    id: 'contact-family-impersonator',
+    name: 'Rohan (New Number)',
+    phoneNumber: '+91 90000 44210',
+    roleDescription: 'WhatsApp Family-Member Impersonation Persona (High Risk)',
+    defaultSmsText:
+      'Hi Dad, I dropped my phone and this is my new number. Please transfer ₹18,500 via UPI to 90000-44210 immediately for an urgent bill.',
+    defaultWhatsAppText:
+      'Hi Dad, I dropped my phone and this is my new WhatsApp number. I have an urgent bill to pay right now — please transfer ₹18,500 via UPI to 90000-44210 immediately. I will pay you back tonight.',
+    defaultCallPitch:
+      'Caller claims to be a relative calling from a new number asking for an urgent ₹18,500 UPI transfer.',
     markedSuspicious: true,
   },
   {
@@ -388,6 +574,7 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     phoneNumber: '+91 90000 10550',
     roleDescription: 'Courier Persona (Ordinary Gate Delivery)',
     defaultSmsText: HACKER_SMS_TEMPLATES[4].content,
+    defaultWhatsAppText: HACKER_WHATSAPP_TEMPLATES[3].content,
     defaultCallPitch:
       'Local delivery agent calling from your front gate to leave your already paid grocery order at the door. No OTP or payment requested.',
     markedSuspicious: false,
@@ -399,6 +586,8 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     roleDescription: 'Unlisted Number (Ordinary Wrong Number)',
     defaultSmsText:
       'Hello, checking if this is Mr. Rao from the neighborhood chess club? Sorry if I texted the wrong number.',
+    defaultWhatsAppText:
+      'Hello! Is this the neighborhood book club group admin? Apologies if I messaged the wrong WhatsApp number.',
     defaultCallPitch:
       'Caller from a local community library asking if this is the neighborhood book club coordinator, then politely apologizing for dialing the wrong number.',
     markedSuspicious: false,
@@ -409,6 +598,8 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     phoneNumber: '+91 90000 00411',
     roleDescription: 'Fake Law-Enforcement Persona (High Risk)',
     defaultSmsText: HACKER_SMS_TEMPLATES[9].content,
+    defaultWhatsAppText:
+      'URGENT: Cyber Crime Police found an illegal parcel in your name and issued an arrest warrant for digital arrest. Message or call 90000-00411 immediately.',
     defaultCallPitch: HACKER_CALL_PRESETS[1].content,
     markedSuspicious: true,
   },
@@ -419,6 +610,8 @@ export const HACKER_CONTACTS: HackerContactPersona[] = [
     roleDescription: 'Legitimate Healthcare Reminder Persona (Safe)',
     defaultSmsText:
       'Friendly reminder: Your routine eye checkup with Dr. Meera Nair is tomorrow at 10:30 AM at Sunrise Clinic. Please bring your reading glasses.',
+    defaultWhatsAppText:
+      'Hello from Sunrise Eye Clinic! Your 10:30 AM checkup tomorrow with Dr. Meera Nair is confirmed. Already paid — no OTP or payment required.',
     defaultCallPitch:
       'Receptionist calling from Sunrise Eye Clinic to confirm your 10:30 AM routine checkup slot tomorrow morning. No payment or personal code requested.',
     markedSuspicious: false,

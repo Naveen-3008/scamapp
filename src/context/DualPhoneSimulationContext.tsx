@@ -12,6 +12,7 @@ import {
   HACKER_CALL_PRESETS,
   HACKER_SCENARIO_LIBRARY,
   HACKER_SMS_TEMPLATES,
+  HACKER_WHATSAPP_TEMPLATES,
 } from '../data/hackerScenarioLibrary';
 import { usePhoneSimulator } from '../hooks/usePhoneSimulator';
 import {
@@ -27,6 +28,16 @@ import {
 } from '../types';
 
 export interface SmsComposerDraft {
+  recipientName: string;
+  recipientNumber: string;
+  senderName: string;
+  senderNumber: string;
+  content: string;
+  selectedTemplateId: string;
+  markedSuspicious: boolean;
+}
+
+export interface WhatsAppComposerDraft {
   recipientName: string;
   recipientNumber: string;
   senderName: string;
@@ -68,6 +79,11 @@ export interface DualPhoneSimulationContextValue {
   smsDraft: SmsComposerDraft;
   updateSmsDraft: (patch: Partial<SmsComposerDraft>) => void;
   applySmsTemplateById: (templateId: string) => void;
+  whatsAppDraft: WhatsAppComposerDraft;
+  updateWhatsAppDraft: (patch: Partial<WhatsAppComposerDraft>) => void;
+  applyWhatsAppTemplateById: (templateId: string) => void;
+  whatsAppView: 'list' | 'chat';
+  setWhatsAppView: (view: 'list' | 'chat') => void;
   callDraft: CallComposerDraft;
   updateCallDraft: (patch: Partial<CallComposerDraft>) => void;
   applyCallPresetById: (presetId: string) => void;
@@ -80,13 +96,16 @@ export interface DualPhoneSimulationContextValue {
   focusCustomSmsCounter: number;
   // Shared actions
   sendSmsFromHacker: () => boolean;
+  sendWhatsAppFromHacker: () => boolean;
   startCallFromHacker: () => boolean;
   endCallFromHacker: () => void;
   loadScenarioIntoHackerApp: (scenario: HackerLibraryScenario) => void;
   loadContactIntoMessages: (contact: HackerContactPersona) => void;
+  loadContactIntoWhatsApp: (contact: HackerContactPersona) => void;
   loadContactIntoPhone: (contact: HackerContactPersona) => void;
-  // Quick Testing Controls (Requirement 8)
+  // Quick Testing Controls
   triggerPresetScamSmsQuick: () => void;
+  triggerPresetWhatsAppScamQuick: () => void;
   openCustomSmsQuick: () => void;
   triggerSuspiciousCallQuick: () => void;
   triggerOrdinaryCallQuick: () => void;
@@ -101,6 +120,7 @@ function createBusId(): string {
 }
 
 const INITIAL_SMS_TEMPLATE = HACKER_SMS_TEMPLATES[0];
+const INITIAL_WHATSAPP_TEMPLATE = HACKER_WHATSAPP_TEMPLATES[0];
 const INITIAL_CALL_PRESET = HACKER_CALL_PRESETS[0];
 
 const DEFAULT_SMS_DRAFT: SmsComposerDraft = {
@@ -110,6 +130,16 @@ const DEFAULT_SMS_DRAFT: SmsComposerDraft = {
   senderNumber: INITIAL_SMS_TEMPLATE.phoneNumber,
   content: INITIAL_SMS_TEMPLATE.content,
   selectedTemplateId: INITIAL_SMS_TEMPLATE.id,
+  markedSuspicious: false,
+};
+
+const DEFAULT_WHATSAPP_DRAFT: WhatsAppComposerDraft = {
+  recipientName: ELDER_GUARDIAN_TARGET.name,
+  recipientNumber: ELDER_GUARDIAN_TARGET.phoneNumber,
+  senderName: INITIAL_WHATSAPP_TEMPLATE.senderName,
+  senderNumber: INITIAL_WHATSAPP_TEMPLATE.phoneNumber,
+  content: INITIAL_WHATSAPP_TEMPLATE.content,
+  selectedTemplateId: INITIAL_WHATSAPP_TEMPLATE.id,
   markedSuspicious: false,
 };
 
@@ -129,6 +159,10 @@ export const DualPhoneSimulationProvider: React.FC<{
   const [hackerScreen, setHackerScreen] = useState<HackerScreenId>('home');
   const [hackerHistory, setHackerHistory] = useState<HackerScreenId[]>([]);
   const [smsDraft, setSmsDraft] = useState<SmsComposerDraft>(DEFAULT_SMS_DRAFT);
+  const [whatsAppDraft, setWhatsAppDraft] = useState<WhatsAppComposerDraft>(
+    DEFAULT_WHATSAPP_DRAFT
+  );
+  const [whatsAppView, setWhatsAppView] = useState<'list' | 'chat'>('list');
   const [callDraft, setCallDraft] =
     useState<CallComposerDraft>(DEFAULT_CALL_DRAFT);
   const [sentMessages, setSentMessages] = useState<HackerSentMessage[]>([]);
@@ -142,6 +176,7 @@ export const DualPhoneSimulationProvider: React.FC<{
   const callDurationTimerRef = useRef<number | null>(null);
   const terminalCallClearTimerRef = useRef<number | null>(null);
   const quickScamSmsIndexRef = useRef<number>(0);
+  const quickScamWhatsAppIndexRef = useRef<number>(0);
   const quickSuspiciousCallIndexRef = useRef<number>(0);
   const quickOrdinaryCallIndexRef = useRef<number>(0);
 
@@ -382,6 +417,10 @@ export const DualPhoneSimulationProvider: React.FC<{
   }, []);
 
   const navigateHackerBack = useCallback(() => {
+    if (hackerScreen === 'whatsapp' && whatsAppView === 'chat') {
+      setWhatsAppView('list');
+      return;
+    }
     setHackerHistory((hist) => {
       if (hist.length === 0) {
         setHackerScreen('home');
@@ -392,7 +431,7 @@ export const DualPhoneSimulationProvider: React.FC<{
       setHackerScreen(previous);
       return next;
     });
-  }, []);
+  }, [hackerScreen, whatsAppView]);
 
   const navigateHackerHome = useCallback(() => {
     setHackerHistory([]);
@@ -419,6 +458,43 @@ export const DualPhoneSimulationProvider: React.FC<{
     const found = HACKER_SMS_TEMPLATES.find((t) => t.id === templateId);
     if (!found) return;
     setSmsDraft((prev) => ({
+      ...prev,
+      selectedTemplateId: found.id,
+      senderName: found.senderName,
+      senderNumber: found.phoneNumber,
+      content: found.content,
+      markedSuspicious: false,
+    }));
+  }, []);
+
+  const updateWhatsAppDraft = useCallback(
+    (patch: Partial<WhatsAppComposerDraft>) => {
+      setWhatsAppDraft((prev) => ({ ...prev, ...patch }));
+    },
+    []
+  );
+
+  const applyWhatsAppTemplateById = useCallback((templateId: string) => {
+    if (templateId === 'custom') {
+      setWhatsAppDraft((prev) => ({
+        ...prev,
+        selectedTemplateId: 'custom',
+        senderName:
+          prev.selectedTemplateId === 'custom'
+            ? prev.senderName
+            : 'Custom WhatsApp Sender',
+        senderNumber:
+          prev.selectedTemplateId === 'custom'
+            ? prev.senderNumber
+            : '+91 90000 00399',
+        content: '',
+        markedSuspicious: false,
+      }));
+      return;
+    }
+    const found = HACKER_WHATSAPP_TEMPLATES.find((t) => t.id === templateId);
+    if (!found) return;
+    setWhatsAppDraft((prev) => ({
       ...prev,
       selectedTemplateId: found.id,
       senderName: found.senderName,
@@ -500,6 +576,68 @@ export const DualPhoneSimulationProvider: React.FC<{
       markedSuspicious: smsDraft.markedSuspicious,
     });
   }, [executeSmsDelivery, smsDraft]);
+
+  // Core WhatsApp Send Handler (Hacker Phone -> ElderGuardian)
+  const executeWhatsAppDelivery = useCallback(
+    (payload: {
+      senderName: string;
+      senderNumber: string;
+      content: string;
+      markedSuspicious?: boolean;
+    }): boolean => {
+      const trimmed = payload.content.trim();
+      if (!trimmed) return false;
+
+      const cleanSender = payload.senderName.trim() || 'WhatsApp Sender';
+      const cleanNumber = payload.senderNumber.trim() || '+91 90000 00311';
+
+      emitBusEvent(
+        'WHATSAPP_MESSAGE_SENT',
+        `WhatsApp message sent from ${cleanSender} to ${ELDER_GUARDIAN_TARGET.shortName}`
+      );
+
+      const { classification } = receiverSim.receiveExternalWhatsApp({
+        senderName: cleanSender,
+        phoneNumber: cleanNumber,
+        content: trimmed,
+        markedSuspicious: payload.markedSuspicious,
+      });
+
+      emitBusEvent(
+        'WHATSAPP_MESSAGE_RECEIVED',
+        `ElderGuardian received WhatsApp message from ${cleanSender}`,
+        classification.riskLevel
+      );
+
+      const shortPreview =
+        trimmed.length > 52 ? `${trimmed.slice(0, 52)}…` : trimmed;
+      emitBusEvent(
+        'WHATSAPP_NOTIFICATION_RECEIVED',
+        `WhatsApp notification on ElderGuardian — ${cleanSender}: "${shortPreview}"`,
+        classification.riskLevel
+      );
+
+      return true;
+    },
+    [emitBusEvent, receiverSim]
+  );
+
+  const sendWhatsAppFromHacker = useCallback((): boolean => {
+    const ok = executeWhatsAppDelivery({
+      senderName: whatsAppDraft.senderName,
+      senderNumber: whatsAppDraft.senderNumber,
+      content: whatsAppDraft.content,
+      markedSuspicious: whatsAppDraft.markedSuspicious,
+    });
+    if (ok) {
+      setWhatsAppDraft((prev) => ({
+        ...prev,
+        content: '',
+        selectedTemplateId: 'custom',
+      }));
+    }
+    return ok;
+  }, [executeWhatsAppDelivery, whatsAppDraft]);
 
   // Core Call Initiation Handler (Hacker Phone -> ElderGuardian)
   const executeCallInitiation = useCallback(
@@ -608,7 +746,7 @@ export const DualPhoneSimulationProvider: React.FC<{
     }
   }, [clearSharedCallTimers]);
 
-  // Populate Messages or Phone app from Scenario Library
+  // Populate Messages, WhatsApp, or Phone app from Scenario Library
   const loadScenarioIntoHackerApp = useCallback(
     (scenario: HackerLibraryScenario) => {
       if (scenario.channel === 'sms') {
@@ -622,6 +760,18 @@ export const DualPhoneSimulationProvider: React.FC<{
           markedSuspicious: false,
         });
         openHackerScreen('messages');
+      } else if (scenario.channel === 'whatsapp') {
+        setWhatsAppDraft({
+          recipientName: ELDER_GUARDIAN_TARGET.name,
+          recipientNumber: ELDER_GUARDIAN_TARGET.phoneNumber,
+          senderName: scenario.senderName,
+          senderNumber: scenario.phoneNumber,
+          content: scenario.content,
+          selectedTemplateId: scenario.id,
+          markedSuspicious: false,
+        });
+        setWhatsAppView('chat');
+        openHackerScreen('whatsapp');
       } else {
         setCallDraft({
           recipientName: ELDER_GUARDIAN_TARGET.name,
@@ -655,6 +805,31 @@ export const DualPhoneSimulationProvider: React.FC<{
         markedSuspicious: false,
       }));
       openHackerScreen('messages');
+    },
+    [openHackerScreen]
+  );
+
+  const loadContactIntoWhatsApp = useCallback(
+    (contact: HackerContactPersona) => {
+      const senderName = contact.isReceiverTarget
+        ? 'National Bank Care'
+        : contact.name;
+      const senderNumber = contact.isReceiverTarget
+        ? '+91 90000 00311'
+        : contact.phoneNumber;
+      setWhatsAppDraft((prev) => ({
+        ...prev,
+        senderName,
+        senderNumber,
+        content:
+          contact.defaultWhatsAppText ||
+          contact.defaultSmsText ||
+          prev.content,
+        selectedTemplateId: 'custom',
+        markedSuspicious: false,
+      }));
+      setWhatsAppView('chat');
+      openHackerScreen('whatsapp');
     },
     [openHackerScreen]
   );
@@ -706,6 +881,34 @@ export const DualPhoneSimulationProvider: React.FC<{
       markedSuspicious: false,
     });
   }, [executeSmsDelivery]);
+
+  const triggerPresetWhatsAppScamQuick = useCallback(() => {
+    const waScamTemplates = HACKER_SCENARIO_LIBRARY.filter(
+      (s) => s.category === 'whatsapp_scams'
+    );
+    const chosen =
+      waScamTemplates[
+        quickScamWhatsAppIndexRef.current % waScamTemplates.length
+      ];
+    quickScamWhatsAppIndexRef.current += 1;
+
+    setWhatsAppDraft({
+      recipientName: ELDER_GUARDIAN_TARGET.name,
+      recipientNumber: ELDER_GUARDIAN_TARGET.phoneNumber,
+      senderName: chosen.senderName,
+      senderNumber: chosen.phoneNumber,
+      content: '',
+      selectedTemplateId: chosen.id,
+      markedSuspicious: false,
+    });
+
+    executeWhatsAppDelivery({
+      senderName: chosen.senderName,
+      senderNumber: chosen.phoneNumber,
+      content: chosen.content,
+      markedSuspicious: false,
+    });
+  }, [executeWhatsAppDelivery]);
 
   const openCustomSmsQuick = useCallback(() => {
     setSmsDraft((prev) => ({
@@ -788,6 +991,8 @@ export const DualPhoneSimulationProvider: React.FC<{
     setSharedCallSession(null);
     receiverSim.resetCurrentScenarioOnReceiver();
     setSmsDraft(DEFAULT_SMS_DRAFT);
+    setWhatsAppDraft(DEFAULT_WHATSAPP_DRAFT);
+    setWhatsAppView('list');
     setCallDraft(DEFAULT_CALL_DRAFT);
     setHackerHistory([]);
     setHackerScreen('home');
@@ -807,6 +1012,11 @@ export const DualPhoneSimulationProvider: React.FC<{
       smsDraft,
       updateSmsDraft,
       applySmsTemplateById,
+      whatsAppDraft,
+      updateWhatsAppDraft,
+      applyWhatsAppTemplateById,
+      whatsAppView,
+      setWhatsAppView,
       callDraft,
       updateCallDraft,
       applyCallPresetById,
@@ -818,12 +1028,15 @@ export const DualPhoneSimulationProvider: React.FC<{
       isCallInProgress,
       focusCustomSmsCounter,
       sendSmsFromHacker,
+      sendWhatsAppFromHacker,
       startCallFromHacker,
       endCallFromHacker,
       loadScenarioIntoHackerApp,
       loadContactIntoMessages,
+      loadContactIntoWhatsApp,
       loadContactIntoPhone,
       triggerPresetScamSmsQuick,
+      triggerPresetWhatsAppScamQuick,
       openCustomSmsQuick,
       triggerSuspiciousCallQuick,
       triggerOrdinaryCallQuick,
@@ -838,6 +1051,11 @@ export const DualPhoneSimulationProvider: React.FC<{
       smsDraft,
       updateSmsDraft,
       applySmsTemplateById,
+      whatsAppDraft,
+      updateWhatsAppDraft,
+      applyWhatsAppTemplateById,
+      whatsAppView,
+      setWhatsAppView,
       callDraft,
       updateCallDraft,
       applyCallPresetById,
@@ -849,12 +1067,15 @@ export const DualPhoneSimulationProvider: React.FC<{
       isCallInProgress,
       focusCustomSmsCounter,
       sendSmsFromHacker,
+      sendWhatsAppFromHacker,
       startCallFromHacker,
       endCallFromHacker,
       loadScenarioIntoHackerApp,
       loadContactIntoMessages,
+      loadContactIntoWhatsApp,
       loadContactIntoPhone,
       triggerPresetScamSmsQuick,
+      triggerPresetWhatsAppScamQuick,
       openCustomSmsQuick,
       triggerSuspiciousCallQuick,
       triggerOrdinaryCallQuick,

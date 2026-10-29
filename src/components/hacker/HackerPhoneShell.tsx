@@ -8,6 +8,7 @@ import { HackerHomeScreen } from './HackerHomeScreen';
 import { HackerMessagesApp } from './HackerMessagesApp';
 import { HackerPhoneApp } from './HackerPhoneApp';
 import { HackerScenarioLibraryApp } from './HackerScenarioLibraryApp';
+import { HackerWhatsAppApp } from './HackerWhatsAppApp';
 
 export const HackerPhoneShell: React.FC = () => {
   const [now, setNow] = useState<Date>(() => new Date());
@@ -27,6 +28,11 @@ export const HackerPhoneShell: React.FC = () => {
     dismissTerminalCallBanner,
   } = useDualPhoneSimulation();
 
+  const statusBarBg =
+    hackerScreen === 'whatsapp' && !sharedCallSession
+      ? 'bg-[#075E54]'
+      : 'bg-slate-950';
+
   return (
     <div className="iphone16-shell">
       {/* Realistic iPhone 16 Side Hardware Buttons */}
@@ -44,7 +50,9 @@ export const HackerPhoneShell: React.FC = () => {
       {/* Inner Proportional iPhone 16 Screen */}
       <div className="iphone16-screen relative flex h-full min-h-0 w-full flex-col overflow-hidden bg-slate-950">
         {/* Top Status Bar with Dynamic Island */}
-        <div className="relative z-30 grid h-[46px] shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-slate-950 px-4 text-white select-none [@container(min-width:350px)]:px-5">
+        <div
+          className={`relative z-30 grid h-[46px] shrink-0 grid-cols-[1fr_auto_1fr] items-center px-4 text-white transition-colors duration-200 select-none [@container(min-width:350px)]:px-5 ${statusBarBg}`}
+        >
           {/* Left: Clock */}
           <div className="flex min-w-0 items-center justify-start pl-0.5">
             <span className="tabular-nums truncate text-[13px] font-bold tracking-tight">
@@ -101,6 +109,7 @@ export const HackerPhoneShell: React.FC = () => {
           >
             {hackerScreen === 'home' && <HackerHomeScreen now={now} />}
             {hackerScreen === 'messages' && <HackerMessagesApp />}
+            {hackerScreen === 'whatsapp' && <HackerWhatsAppApp />}
             {hackerScreen === 'phone' && <HackerPhoneApp />}
             {hackerScreen === 'contacts' && <HackerContactsApp />}
             {hackerScreen === 'scenarios' && <HackerScenarioLibraryApp />}

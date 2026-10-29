@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  MessageCircle,
   MessageSquare,
   Phone,
 } from 'lucide-react';
@@ -11,6 +12,7 @@ import { HACKER_SCENARIO_LIBRARY } from '../../data/hackerScenarioLibrary';
 import { HackerScenarioCategory } from '../../types';
 
 const CATEGORY_TABS: { id: HackerScenarioCategory; label: string }[] = [
+  { id: 'whatsapp_scams', label: 'WhatsApp Scams' },
   { id: 'sms_scams', label: 'SMS Scams' },
   { id: 'suspicious_calls', label: 'Suspicious Calls' },
   { id: 'safe_messages', label: 'Safe Messages' },
@@ -21,7 +23,7 @@ export const HackerScenarioLibraryApp: React.FC = () => {
   const { loadScenarioIntoHackerApp, navigateHackerHome } =
     useDualPhoneSimulation();
   const [activeCategory, setActiveCategory] =
-    useState<HackerScenarioCategory>('sms_scams');
+    useState<HackerScenarioCategory>('whatsapp_scams');
 
   const filteredScenarios = HACKER_SCENARIO_LIBRARY.filter(
     (s) => s.category === activeCategory
@@ -46,22 +48,24 @@ export const HackerScenarioLibraryApp: React.FC = () => {
               Scenario Library
             </h1>
             <p className="truncate text-[0.68rem] text-slate-400">
-              Select a scenario to populate Messages or Phone
+              Select a scenario to populate WhatsApp, SMS, or Phone
             </p>
           </div>
         </div>
       </header>
 
-      {/* 4 Category Filter Tabs */}
+      {/* Category Filter Tabs */}
       <div className="grid shrink-0 grid-cols-2 gap-1 border-b border-white/10 bg-slate-900/70 p-2">
-        {CATEGORY_TABS.map((tab) => {
+        {CATEGORY_TABS.map((tab, idx) => {
           const isActive = activeCategory === tab.id;
+          const spanClass =
+            idx === CATEGORY_TABS.length - 1 ? 'col-span-2' : '';
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveCategory(tab.id)}
-              className={`min-h-[36px] rounded-xl px-2.5 py-1.5 text-xs font-bold transition-colors ${
+              className={`min-h-[34px] rounded-xl px-2.5 py-1.5 text-xs font-bold whitespace-nowrap transition-colors ${spanClass} ${
                 isActive
                   ? 'bg-cyan-500 text-slate-950 shadow-2xs'
                   : 'bg-white/[0.04] text-slate-300 hover:bg-white/10 hover:text-white'
@@ -77,6 +81,19 @@ export const HackerScenarioLibraryApp: React.FC = () => {
       <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto px-3.5 py-3.5 [@container(min-width:355px)]:px-4">
         {filteredScenarios.map((scenario) => {
           const isSafe = scenario.expectedRiskLabel === 'Safe / Ordinary';
+          const channelLabel =
+            scenario.channel === 'whatsapp'
+              ? 'WhatsApp Scenario'
+              : scenario.channel === 'sms'
+              ? 'SMS Scenario'
+              : 'Call Scenario';
+          const ctaLabel =
+            scenario.channel === 'whatsapp'
+              ? 'Open in WhatsApp to Send'
+              : scenario.channel === 'sms'
+              ? 'Open in Messages to Send'
+              : 'Open in Phone to Call';
+
           return (
             <div
               key={scenario.id}
@@ -85,21 +102,19 @@ export const HackerScenarioLibraryApp: React.FC = () => {
               {/* Clean Unboxed Metadata Kicker */}
               <div className="flex items-center gap-1.5 text-[0.68rem] font-semibold">
                 <span className="inline-flex items-center gap-1 text-slate-300">
-                  {scenario.channel === 'sms' ? (
+                  {scenario.channel === 'whatsapp' ? (
+                    <MessageCircle className="h-3 w-3 shrink-0 text-emerald-400" />
+                  ) : scenario.channel === 'sms' ? (
                     <MessageSquare className="h-3 w-3 shrink-0 text-amber-400" />
                   ) : (
                     <Phone className="h-3 w-3 shrink-0 text-rose-400" />
                   )}
-                  {scenario.channel === 'sms' ? 'SMS Scenario' : 'Call Scenario'}
+                  {channelLabel}
                 </span>
                 <span aria-hidden="true" className="text-slate-600">
                   ·
                 </span>
-                <span
-                  className={
-                    isSafe ? 'text-emerald-300' : 'text-amber-300'
-                  }
-                >
+                <span className={isSafe ? 'text-emerald-300' : 'text-amber-300'}>
                   Expected: {scenario.expectedRiskLabel}
                 </span>
               </div>
@@ -131,11 +146,7 @@ export const HackerScenarioLibraryApp: React.FC = () => {
                 onClick={() => loadScenarioIntoHackerApp(scenario)}
                 className="mt-3 flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl bg-cyan-500/20 px-3 py-2 text-xs font-bold text-cyan-200 ring-1 ring-cyan-400/40 transition-colors hover:bg-cyan-500/30"
               >
-                <span>
-                  {scenario.channel === 'sms'
-                    ? 'Open in Messages to Send'
-                    : 'Open in Phone to Call'}
-                </span>
+                <span>{ctaLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5 shrink-0" />
               </button>
             </div>

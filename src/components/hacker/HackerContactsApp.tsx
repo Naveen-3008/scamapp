@@ -1,11 +1,20 @@
 import React from 'react';
-import { ArrowLeft, MessageSquare, Phone, Shield, User, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  Shield,
+  User,
+  Users,
+} from 'lucide-react';
 import { useDualPhoneSimulation } from '../../context/DualPhoneSimulationContext';
 import { HACKER_CONTACTS } from '../../data/hackerScenarioLibrary';
 
 export const HackerContactsApp: React.FC = () => {
   const {
     loadContactIntoMessages,
+    loadContactIntoWhatsApp,
     loadContactIntoPhone,
     navigateHackerHome,
   } = useDualPhoneSimulation();
@@ -28,7 +37,7 @@ export const HackerContactsApp: React.FC = () => {
               Contacts & Personas
             </h1>
             <p className="truncate text-[0.68rem] text-slate-400">
-              Fictional receiver & test caller identities
+              Fictional receiver & test sender identities
             </p>
           </div>
         </div>
@@ -65,23 +74,32 @@ export const HackerContactsApp: React.FC = () => {
                   {contact.roleDescription}
                 </p>
 
-                <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                   <button
                     type="button"
                     onClick={() => loadContactIntoMessages(contact)}
-                    className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-white/15"
+                    className="flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-white/15"
                   >
                     <MessageSquare className="h-3.5 w-3.5 shrink-0 text-amber-300" />
-                    <span>Compose SMS</span>
+                    <span>SMS</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => loadContactIntoWhatsApp(contact)}
+                    className="flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-white/15"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                    <span>WhatsApp</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => loadContactIntoPhone(contact)}
-                    className="flex min-h-[38px] items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-white/15"
+                    className="flex min-h-[38px] items-center justify-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-white/15"
                   >
-                    <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                    <span>Prepare Call</span>
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-rose-300" />
+                    <span>Call</span>
                   </button>
                 </div>
               </div>

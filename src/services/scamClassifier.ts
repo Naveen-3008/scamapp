@@ -251,6 +251,17 @@ const DETECTION_RULES: RuleDefinition[] = [
   },
   {
     id: 'urgent_pressure_tactic',
+    weight: 48,
+    primaryCategory: 'urgent_financial_request',
+    categoryPriority: 86,
+    channels: ['sms', 'whatsapp'],
+    patterns: [
+      /\b(?:new\s+(?:whatsapp\s+)?number|lost\s+my\s+phone|dropped\s+my\s+phone|broke\s+my\s+phone)\b[\s\S]{0,120}\b(?:transfer|send|upi|pay|₹\s*[0-9,]+)\b/gi,
+      /\b(?:hospital\s+emergency|medical\s+emergency|urgent\s+bill)\b[\s\S]{0,90}\b(?:transfer|send|upi|₹\s*[0-9,]+)\b/gi,
+    ],
+  },
+  {
+    id: 'urgent_pressure_tactic',
     weight: 16,
     primaryCategory: 'urgent_financial_request',
     categoryPriority: 35,

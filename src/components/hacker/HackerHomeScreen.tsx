@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   BookOpen,
   FlaskConical,
+  MessageCircle,
   MessageSquare,
   PenSquare,
   Phone,
@@ -33,25 +34,40 @@ interface LauncherApp {
 
 export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
   const {
+    receiverSim,
     openHackerScreen,
     sentMessages,
     callHistory,
     eventBusLog,
     isCallInProgress,
     triggerPresetScamSmsQuick,
+    triggerPresetWhatsAppScamQuick,
     openCustomSmsQuick,
     triggerSuspiciousCallQuick,
     triggerOrdinaryCallQuick,
     resetCurrentScenario,
   } = useDualPhoneSimulation();
 
-  const apps: LauncherApp[] = [
+  const whatsAppMessageCount = useMemo(
+    () =>
+      receiverSim.processedEvents.filter((e) => e.channel === 'whatsapp').length,
+    [receiverSim.processedEvents]
+  );
+
+  const gridApps: LauncherApp[] = [
     {
       id: 'messages',
       label: 'Messages',
       icon: <MessageSquare className="h-[22px] w-[22px] shrink-0 text-white" />,
       bgClass: 'bg-gradient-to-br from-amber-500 to-orange-700',
       badgeCount: sentMessages.length > 0 ? sentMessages.length : undefined,
+    },
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      icon: <MessageCircle className="h-[22px] w-[22px] shrink-0 text-white" />,
+      bgClass: 'bg-gradient-to-br from-emerald-500 to-green-700',
+      badgeCount: whatsAppMessageCount > 0 ? whatsAppMessageCount : undefined,
     },
     {
       id: 'phone',
@@ -72,6 +88,13 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
       icon: <BookOpen className="h-[22px] w-[22px] shrink-0 text-white" />,
       bgClass: 'bg-gradient-to-br from-cyan-600 to-blue-800',
     },
+  ];
+
+  const dockApps: LauncherApp[] = [
+    gridApps[2], // Phone
+    gridApps[0], // Messages
+    gridApps[1], // WhatsApp
+    gridApps[4], // Scenario Library
   ];
 
   const latestBusEvent = eventBusLog[0] || null;
@@ -117,20 +140,20 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                   Security Testing Simulator
                 </div>
                 <div className="line-clamp-1 text-[0.7rem] leading-snug text-slate-300 [@container(min-width:355px)]:text-xs">
-                  Sends simulated SMS & calls to ElderGuardian
+                  Sends simulated SMS, WhatsApp & calls to ElderGuardian
                 </div>
               </div>
             </div>
           </button>
 
           {/* Uniform 4-Column App Launcher Grid */}
-          <div className="home-icon-grid gap-x-1.5 gap-y-3 pt-0.5 [@container(min-width:355px)]:gap-x-2">
-            {apps.map((app) => (
+          <div className="home-icon-grid gap-x-1.5 gap-y-2.5 pt-0.5 [@container(min-width:355px)]:gap-x-2">
+            {gridApps.map((app) => (
               <button
                 key={app.id}
                 type="button"
                 onClick={() => openHackerScreen(app.id)}
-                className="group flex min-w-0 flex-col items-center justify-start pt-1.5 text-center"
+                className="group flex min-w-0 flex-col items-center justify-start pt-1 text-center"
               >
                 <div className="relative inline-flex shrink-0">
                   <div
@@ -151,7 +174,7 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
             ))}
           </div>
 
-          {/* Quick Testing Controls Section (Requirement 8) */}
+          {/* Quick Testing Controls Section */}
           <section
             aria-label="Quick Testing Controls"
             className="w-full min-w-0 rounded-2xl border border-white/15 bg-slate-900/75 p-3 backdrop-blur-md"
@@ -170,7 +193,7 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                 <button
                   type="button"
                   onClick={triggerPresetScamSmsQuick}
-                  className="flex min-h-[42px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-2.5 py-2 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-400 active:bg-amber-300"
+                  className="flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-amber-500 px-2.5 py-1.5 text-xs font-bold text-slate-950 transition-colors hover:bg-amber-400 active:bg-amber-300"
                 >
                   <Send className="h-3.5 w-3.5 shrink-0" />
                   <span className="wrap-safe text-center leading-tight">
@@ -181,7 +204,7 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                 <button
                   type="button"
                   onClick={openCustomSmsQuick}
-                  className="flex min-h-[42px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/15"
+                  className="flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-white/15"
                 >
                   <PenSquare className="h-3.5 w-3.5 shrink-0 text-amber-300" />
                   <span className="wrap-safe text-center leading-tight">
@@ -190,12 +213,21 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                 </button>
               </div>
 
+              <button
+                type="button"
+                onClick={triggerPresetWhatsAppScamQuick}
+                className="flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-3 py-1.5 text-xs font-bold text-slate-950 transition-colors hover:bg-[#20bd5a]"
+              >
+                <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                <span>Send Preset WhatsApp Scam</span>
+              </button>
+
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
                   disabled={isCallInProgress}
                   onClick={triggerSuspiciousCallQuick}
-                  className="flex min-h-[42px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-2.5 py-2 text-xs font-bold text-white transition-colors hover:bg-rose-500 disabled:opacity-45"
+                  className="flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-rose-500 disabled:opacity-45"
                 >
                   <PhoneOutgoing className="h-3.5 w-3.5 shrink-0" />
                   <span className="wrap-safe text-center leading-tight">
@@ -207,7 +239,7 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                   type="button"
                   disabled={isCallInProgress}
                   onClick={triggerOrdinaryCallQuick}
-                  className="flex min-h-[42px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 disabled:opacity-45"
+                  className="flex min-h-[40px] min-w-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-emerald-500 disabled:opacity-45"
                 >
                   <PhoneCall className="h-3.5 w-3.5 shrink-0" />
                   <span className="wrap-safe text-center leading-tight">
@@ -219,7 +251,7 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
               <button
                 type="button"
                 onClick={resetCurrentScenario}
-                className="flex min-h-[38px] w-full items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
+                className="flex min-h-[36px] w-full items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-slate-950/70 px-3 py-1.5 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
               >
                 <RotateCcw className="h-3.5 w-3.5 shrink-0 text-slate-300" />
                 <span>Reset Current Scenario</span>
@@ -227,12 +259,12 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
             </div>
 
             {latestBusEvent && (
-              <div className="mt-2.5 border-t border-white/10 pt-2 text-[0.68rem] leading-snug text-slate-300">
+              <div className="mt-2 border-t border-white/10 pt-2 text-[0.68rem] leading-snug text-slate-300">
                 <div className="flex items-center justify-between gap-2 text-slate-400">
-                  <span className="font-mono-tabular font-semibold text-amber-300">
+                  <span className="font-mono-tabular truncate font-semibold text-amber-300">
                     {latestBusEvent.type}
                   </span>
-                  <span className="tabular-nums">
+                  <span className="tabular-nums shrink-0">
                     {formatEventTime(latestBusEvent.timestampIso, 'en')}
                   </span>
                 </div>
@@ -247,11 +279,11 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
         {/* Bottom Sandbox Disclaimer + Uniform 4-Icon App Dock */}
         <div className="flex w-full min-w-0 flex-col gap-2">
           <p className="wrap-safe w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-1.5 text-center text-[0.66rem] leading-snug text-slate-300">
-            Local web simulation only. Never sends real SMS or places real calls.
+            Local web simulation only. Never sends real SMS, WhatsApp, or calls.
           </p>
 
           <div className="home-icon-grid gap-x-1.5 rounded-[1.5rem] border border-white/15 bg-slate-950/65 px-2.5 pt-2.5 pb-2 shadow-xl backdrop-blur-md">
-            {apps.map((app) => (
+            {dockApps.map((app) => (
               <button
                 key={`hacker-dock-${app.id}`}
                 type="button"
@@ -265,6 +297,11 @@ export const HackerHomeScreen: React.FC<HackerHomeScreenProps> = ({ now }) => {
                   >
                     {app.icon}
                   </div>
+                  {app.badgeCount !== undefined && app.badgeCount > 0 && (
+                    <span className="tabular-nums pointer-events-none absolute -top-1.5 -right-1.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] leading-none font-bold text-slate-950 shadow-xs ring-2 ring-slate-950">
+                      {app.badgeCount > 9 ? '9+' : app.badgeCount}
+                    </span>
+                  )}
                 </div>
               </button>
             ))}
